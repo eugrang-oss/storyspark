@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StorySpark – Language Storytelling Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f1a;
+    --surface: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.09);
+    --text: #f0ede6;
+    --muted: #a09fa8;
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    top: -15%; right: -8%;
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 70%);
+  }
+  body::after {
+    bottom: -18%; left: -8%;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(236,72,153,0.09) 0%, transparent 70%);
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeUp 0.35s ease both; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Language toggle */
+  .lang-toggle {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+    gap: 6px;
+  }
+  .lang-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .lang-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: clamp(2.4rem, 7vw, 3.6rem);
+    line-height: 1.05;
+    margin-bottom: 14px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    font-weight: 300;
+    color: var(--muted);
+    font-size: 0.97rem;
+    line-height: 1.8;
+    margin-bottom: 32px;
+  }
+  .subtitle .pt { display: none; font-size: 0.85rem; color: rgba(160,159,168,0.7); margin-top: 6px; }
+  body.pt .subtitle .pt { display: block; }
+
+  /* Name field */
+  .name-wrap { margin-bottom: 20px; }
+  .name-wrap label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+  }
+  #student-name {
+    width: 100%;
+    padding: 13px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #student-name:focus { border-color: rgba(99,102,241,0.5); }
+  #student-name::placeholder { color: rgba(160,159,168,0.5); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px;
+    margin-bottom: 20px;
+  }
+
+  .setting-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .pill-row { display: flex; gap: 10px; margin-bottom: 22px; }
+  .pill-row:last-child { margin-bottom: 0; }
+  .pill {
+    flex: 1; padding: 10px 0;
+    border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 500;
+    background: rgba(255,255,255,0.07); color: var(--muted);
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+  }
+  .pill:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+  .pill.active { background: var(--accent); color: #fff; }
+  .pill:active { transform: scale(0.97); }
+
+  /* How to play */
+  .how-to {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .how-to-title {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 14px;
+  }
+  .how-to ol { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .how-to li { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+  .how-to li strong { color: var(--text); font-weight: 500; }
+  .how-to .pt-block { display: none; }
+  body.pt .how-to .en-block { display: none; }
+  body.pt .how-to .pt-block { display: block; }
+
+  .btn-primary {
+    width: 100%; padding: 18px; border-radius: 12px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; font-family: 'DM Serif Display', serif; font-style: italic;
+    font-size: 1.25rem; letter-spacing: 0.4px;
+    box-shadow: 0 8px 28px rgba(99,102,241,0.32);
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .btn-ghost {
+    padding: 15px 20px; border-radius: 10px;
+    border: 1px solid var(--border); cursor: pointer;
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  .timer-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  #timer-display {
+    font-family: 'DM Serif Display', serif; font-style: italic; font-size: 2.2rem;
+    transition: color 0.5s; color: var(--text);
+  }
+  #timer-display.warning { color: #f97316; }
+  #timer-display.urgent  { color: #ef4444; }
+
+  .progress-track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 28px; }
+  #progress-bar { height: 100%; border-radius: 2px; background: var(--accent); transition: width 1s linear, background 0.5s; width: 100%; }
+
+  #grammar-badge { display: inline-flex; align-items: center; gap: 10px; border-radius: 10px; padding: 10px 16px; margin-bottom: 22px; }
+  .badge-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .badge-name { font-weight: 500; font-size: 0.9rem; }
+  .badge-hint { font-weight: 300; color: var(--muted); font-size: 0.76rem; margin-top: 1px; }
+
+  .chips-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  #word-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+  .chip {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 8px; padding: 8px 16px;
+    font-family: 'DM Serif Display', serif; font-style: italic; font-size: 1.1rem; color: var(--text);
+  }
+
+  #sentence-input {
+    width: 100%; min-height: 130px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 1.05rem;
+    line-height: 1.7; padding: 16px; resize: vertical; outline: none;
+    transition: border-color 0.2s; margin-bottom: 16px;
+  }
+  #sentence-input:focus { border-color: rgba(99,102,241,0.5); }
+  #sentence-input::placeholder { color: rgba(160,159,168,0.6); }
+
+  .btn-row { display: flex; gap: 12px; }
+  .btn-row .btn-primary { flex: 1; padding: 15px; font-size: 1.05rem; }
+
+  /* Result */
+  #result-screen h2 { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 2rem; margin-bottom: 26px; text-align: center; }
+  #result-screen .eyebrow { text-align: center; }
+
+  #result-card { border-radius: 16px; padding: 24px; margin-bottom: 22px; text-align: left; }
+  .result-badge-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .result-badge-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .result-grammar-name { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+  .result-words { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .result-word-chip { border-radius: 6px; padding: 3px 10px; font-family: 'DM Serif Display', serif; font-style: italic; font-size: 0.9rem; color: var(--text); }
+  .result-sentence { font-size: 1rem; line-height: 1.75; font-style: italic; padding-left: 14px; border-left-width: 3px; border-left-style: solid; }
+
+  /* Export button */
+  .export-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px; border-radius: 10px;
+    border: 1px solid rgba(99,102,241,0.4); cursor: pointer;
+    background: rgba(99,102,241,0.08); color: var(--accent);
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+    transition: all 0.2s; margin-top: 12px;
+  }
+  .export-btn:hover { background: rgba(99,102,241,0.16); border-color: rgba(99,102,241,0.6); }
+
+  .history-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; margin-top: 28px; }
+  #history-list, #all-history { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
+  .history-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 14px; }
+  .history-grammar { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+  .history-sentence { font-size: 0.82rem; color: var(--muted); font-style: italic; }
+
+  /* Finish button */
+  .finish-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 13px;
+    border-radius: 10px;
+    border: 1px solid rgba(250,204,21,0.4);
+    cursor: pointer;
+    background: rgba(250,204,21,0.07);
+    color: #facc15;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+  }
+  .finish-btn:hover {
+    background: rgba(250,204,21,0.14);
+    border-color: rgba(250,204,21,0.6);
+  }
+
+  /* AI Feedback */
+  .ai-feedback-wrap {
+    margin-top: 10px;
+    background: rgba(99,102,241,0.06);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+  .ai-feedback-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .ai-feedback-header .ai-icon { font-size: 0.9rem; }
+  .ai-score { display: flex; gap: 3px; margin-bottom: 6px; }
+  .ai-score span { font-size: 1rem; }
+  .ai-grammar-ok  { color: #4ade80; margin-bottom: 4px; }
+  .ai-grammar-err { color: #f87171; margin-bottom: 4px; }
+  .ai-suggestion  { color: #fbbf24; margin-bottom: 4px; font-style: italic; }
+  .ai-comment     { color: var(--muted); }
+  .ai-loading {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--muted); font-size: 0.82rem; padding: 6px 0;
+  }
+  .ai-spinner {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(99,102,241,0.3);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Round limit */
+  .round-limit-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+
+  /* Session complete screen */
+  #complete-screen { text-align: center; }
+  #complete-screen h2 {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+  }
+  .complete-meta {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.8;
+  }
+  .complete-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 340px;
+    overflow-y: auto;
+    margin-bottom: 24px;
+    text-align: left;
+  }
+  .complete-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .complete-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .complete-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .complete-grammar { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .complete-words { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; font-style: italic; }
+  .complete-sentence { font-size: 0.92rem; line-height: 1.65; padding-left: 12px; border-left-width: 2px; border-left-style: solid; font-style: italic; }
+  .score-ring {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    font-family: 'DM Serif Display', serif;
+  }
+  .score-ring .score-num { font-size: 2rem; font-style: italic; line-height: 1; }
+  .score-ring .score-label { font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+
+  /* Difficulty level */
+  .level-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .level-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 12px 6px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+  }
+  .level-btn .level-tag {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .level-btn .level-desc {
+    font-size: 0.62rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    font-weight: 400;
+  }
+  .level-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .level-btn.active { color: #fff; border-color: transparent; }
+  .level-btn[data-level="A1"].active { background: #16a34a; }
+  .level-btn[data-level="A2"].active { background: #2563eb; }
+  .level-btn[data-level="B1"].active { background: #7c3aed; }
+
+  /* Level badge in game */
+  .level-indicator {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* Opt-in checkbox */
+  .optin-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(99,102,241,0.07);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+  }
+  .optin-wrap input[type="checkbox"] {
+    width: 18px; height: 18px;
+    min-width: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    margin-top: 2px;
+  }
+  .optin-wrap label {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.6;
+    cursor: pointer;
+  }
+  .optin-wrap label strong { color: var(--text); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+  /* Print styles */
+  @media print {
+    body { background: #fff !important; color: #111 !important; display: block; padding: 0; }
+    body::before, body::after { display: none; }
+    #app { max-width: 100%; }
+    .screen { display: none !important; }
+    #print-area { display: block !important; }
+    .no-print { display: none !important; }
+  }
+
+  #print-area {
+    display: none;
+    font-family: 'DM Sans', sans-serif;
+    color: #111;
+    padding: 20px;
+  }
+  #print-area h2 { font-family: 'DM Serif Display', serif; font-size: 1.8rem; margin-bottom: 4px; }
+  #print-area .print-meta { font-size: 0.85rem; color: #666; margin-bottom: 24px; border-bottom: 1px solid #ddd; padding-bottom: 12px; }
+  #print-area .print-item { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+  #print-area .print-round { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+  #print-area .print-grammar { font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+  #print-area .print-words { font-size: 0.85rem; color: #555; margin-bottom: 8px; }
+  #print-area .print-sentence { font-style: italic; font-size: 1rem; color: #111; border-left: 3px solid #6366f1; padding-left: 12px; }
+  #print-area .print-footer { font-size: 0.75rem; color: #aaa; margin-top: 32px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Print area (hidden on screen, shown on print) -->
+  <div id="print-area">
+    <h2>StorySpark – Session Report</h2>
+    <div class="print-meta" id="print-meta"></div>
+    <div id="print-items"></div>
+    <div class="print-footer">StorySpark · Created by Tr. Eugénio &amp; StorySpark AI · eugrang@gmail.com</div>
+  </div>
+
+  <!-- SESSION COMPLETE SCREEN -->
+  <div id="complete-screen" class="screen">
+    <div class="eyebrow" id="complete-eyebrow">Session Complete!</div>
+    <div class="score-ring" id="score-ring" style="border: 4px solid var(--accent); background: rgba(99,102,241,0.08);">
+      <span class="score-num" id="score-num">10</span>
+      <span class="score-label" id="score-label">rounds</span>
+    </div>
+    <h2 id="complete-title">Excellent work!</h2>
+    <div class="complete-meta" id="complete-meta"></div>
+    <div class="complete-summary" id="complete-summary"></div>
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn-primary" id="complete-export-btn">⬇ Export Report / Exportar</button>
+    </div>
+    <button class="btn-ghost" style="width:100%;" id="complete-home-btn">Play Again / Jogar Novamente</button>
+  </div>
+
+  <!-- HOME SCREEN -->
+  <div id="home-screen" class="screen active">
+    <div class="lang-toggle no-print">
+      <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="btn-pt" onclick="setLang('pt')">PT</button>
+    </div>
+
+    <div class="eyebrow" data-en="Language Learning Tool" data-pt="Ferramenta de Aprendizagem">Language Learning Tool</div>
+    <h1>Story<span>Spark</span></h1>
+    <p class="subtitle">
+      <span class="en-inline">Draw random words. Master a grammar point.<br>Write your sentence before time runs out.</span>
+      <span class="pt" style="display:none;">Sorteie palavras. Pratique uma estrutura gramatical.<br>Escreva sua frase antes que o tempo acabe.</span>
+    </p>
+
+    <!-- How to play -->
+    <div class="how-to">
+      <div class="how-to-title" data-en="📖 How to Play" data-pt="📖 Como Jogar">📖 How to Play</div>
+      <div class="en-block">
+        <ol>
+          <li><strong>Enter your name</strong> below so your results can be saved.</li>
+          <li><strong>Choose a timer</strong> (1–5 min) and <strong>how many words</strong> per round.</li>
+          <li>Each round gives you <strong>random nouns</strong> and a <strong>grammar point</strong> to practice.</li>
+          <li><strong>Write a sentence</strong> using all the words and the grammar structure shown.</li>
+          <li>Hit <strong>Submit</strong> before time runs out — or it auto-submits for you!</li>
+          <li>At the end, <strong>export or print</strong> your results to share with your teacher.</li>
+        </ol>
+      </div>
+      <div class="pt-block" style="display:none;">
+        <ol>
+          <li><strong>Digite seu nome</strong> abaixo para salvar seus resultados.</li>
+          <li><strong>Escolha o tempo</strong> (1–5 min) e <strong>quantas palavras</strong> por rodada.</li>
+          <li>Cada rodada traz <strong>substantivos aleatórios</strong> e uma <strong>estrutura gramatical</strong> para praticar.</li>
+          <li><strong>Escreva uma frase</strong> usando todas as palavras e a estrutura mostrada.</li>
+          <li>Clique em <strong>Enviar</strong> antes do tempo acabar — ou ele envia automaticamente!</li>
+          <li>Ao final, <strong>exporte ou imprima</strong> seus resultados para enviar ao professor.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Student name + email -->
+    <div class="name-wrap">
+      <label data-en="👤 Your Name / Nome do Aluno" data-pt="👤 Nome do Aluno">👤 Your Name / Nome do Aluno</label>
+      <input type="text" id="student-name" placeholder="e.g. Maria Silva" autocomplete="name" />
+    </div>
+    <div class="name-wrap">
+      <label>✉️ Your Email / Email do Aluno</label>
+      <input type="email" id="student-email" placeholder="e.g. maria@gmail.com" autocomplete="email" />
+    </div>
+
+    <!-- Opt-in consent -->
+    <div class="optin-wrap" onclick="document.getElementById('optin-check').click(); event.stopPropagation();">
+      <input type="checkbox" id="optin-check" onclick="event.stopPropagation();" />
+      <label for="optin-check">
+        <strong>Stay in the loop! / Fique por dentro!</strong><br>
+        I agree to receive updates about new learning tools and resources from <strong>Tr. Eugénio</strong>. I can unsubscribe at any time.<br>
+        <span style="font-size:0.76rem; opacity:0.6;">Concordo em receber novidades sobre ferramentas educativas de Tr. Eugénio. Posso cancelar a qualquer momento.</span>
+      </label>
+    </div>
+
+    <div class="card">
+      <span class="setting-label" data-en="⏱ Timer (minutes) / Tempo (minutos)" data-pt="⏱ Tempo (minutos)">⏱ Timer (minutes) / Tempo (minutos)</span>
+      <div class="pill-row" id="timer-pills">
+        <button class="pill" data-value="1">1</button>
+        <button class="pill active" data-value="2">2</button>
+        <button class="pill" data-value="3">3</button>
+        <button class="pill" data-value="5">5</button>
+      </div>
+      <span class="setting-label" data-en="📝 Words per round / Palavras por rodada" data-pt="📝 Palavras por rodada">📝 Words per round / Palavras por rodada</span>
+      <div class="pill-row" id="word-pills">
+        <button class="pill" data-value="3">3</button>
+        <button class="pill active" data-value="5">5</button>
+        <button class="pill" data-value="7">7</button>
+      </div>
+      <span class="setting-label" data-en="✍️ Sentences to write / Frases para escrever" data-pt="✍️ Frases para escrever">✍️ Sentences to write / Frases para escrever</span>
+      <div class="pill-row" id="sentence-pills">
+        <button class="pill active" data-value="1">1 sentence</button>
+        <button class="pill" data-value="2">2 sentences</button>
+        <button class="pill" data-value="3">3 sentences</button>
+      </div>
+      <span class="setting-label" data-en="🎯 Your Level / Seu Nível" data-pt="🎯 Seu Nível">🎯 Your Level / Seu Nível</span>
+      <div class="level-row" id="level-btns">
+        <button class="level-btn active" data-level="A1">
+          <span class="level-tag">A1</span>
+          <span class="level-desc">Beginner</span>
+        </button>
+        <button class="level-btn" data-level="A2">
+          <span class="level-tag">A2</span>
+          <span class="level-desc">Elementary</span>
+        </button>
+        <button class="level-btn" data-level="B1">
+          <span class="level-tag">B1</span>
+          <span class="level-desc">Intermediate</span>
+        </button>
+      </div>
+      <div id="level-description" style="font-size:0.8rem; color:var(--muted); line-height:1.6; padding:10px 14px; background:rgba(255,255,255,0.03); border-radius:8px; border-left:3px solid #16a34a; transition:border-color 0.3s;">
+      </div>
+      <span class="setting-label" style="margin-top:20px; display:block;" data-en="🎮 Rounds per session / Rodadas por sessão" data-pt="🎮 Rodadas por sessão">🎮 Rounds per session / Rodadas por sessão</span>
+      <div class="round-limit-row" id="round-limit-pills">
+        <button class="pill active" data-value="10">10</button>
+        <button class="pill" data-value="20">20</button>
+        <button class="pill" data-value="40">40</button>
+        <button class="pill" data-value="0">∞</button>
+      </div>
+      <span class="setting-label" style="margin-top:4px; display:block;" data-en="🔔 Timer Alert (last 30s) / Alerta Sonoro" data-pt="🔔 Alerta Sonoro (últimos 30s)">🔔 Timer Alert (last 30s) / Alerta Sonoro</span>
+      <div class="pill-row" id="sound-pills">
+        <button class="pill active" data-value="on">🔔 On</button>
+        <button class="pill" data-value="off">🔇 Off</button>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="start-btn">Begin Writing → / Começar →</button>
+
+    <div id="home-history" style="display:none; margin-top:28px;">
+      <div class="history-label" data-en="Session History / Histórico da Sessão" data-pt="Histórico da Sessão">Session History / Histórico da Sessão</div>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- Creator credit -->
+    <div style="margin-top:36px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.07); text-align:center;">
+      <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(160,159,168,0.5); margin-bottom:8px;">Created by / Criado por</div>
+      <div style="font-family:'DM Serif Display',serif; font-style:italic; font-size:1.05rem; color:var(--text); margin-bottom:4px;">Tr. Eugénio &amp; StorySpark AI</div>
+      <a href="mailto:eugrang@gmail.com" style="font-size:0.8rem; color:var(--accent); text-decoration:none; letter-spacing:0.3px; transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">eugrang@gmail.com</a>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen">
+    <div class="timer-row">
+      <span class="eyebrow" style="margin:0;" id="round-label">Round 1</span>
+      <span id="timer-display">2:00</span>
+    </div>
+    <div class="progress-track"><div id="progress-bar"></div></div>
+
+    <div id="grammar-badge">
+      <div class="badge-dot" id="badge-dot"></div>
+      <div>
+        <div class="badge-name" id="badge-name"></div>
+        <div class="badge-hint" id="badge-hint"></div>
+      </div>
+    </div>
+
+    <div class="chips-label" id="chips-label">Use these words in your sentence / Use estas palavras na sua frase:</div>
+    <div id="word-chips"></div>
+
+    <div id="sentence-instruction" style="
+      font-size:0.8rem; color:var(--muted); margin-bottom:10px; line-height:1.6;
+      background:rgba(99,102,241,0.07); border-left:3px solid var(--accent);
+      padding:8px 12px; border-radius:0 8px 8px 0;
+    "></div>
+
+    <textarea id="sentence-input" placeholder="Write your sentence(s) here… / Escreva sua(s) frase(s) aqui…"></textarea>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="submit-btn">Submit / Enviar</button>
+      <button class="btn-ghost" id="quit-btn">Quit / Sair</button>
+    </div>
+    <button class="finish-btn" id="finish-btn" style="display:none;">
+      🏁 Finish Session / Terminar Sessão
+    </button>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="result-screen" class="screen">
+    <div class="eyebrow" id="result-round-label">Round 1 Complete</div>
+    <h2 id="result-title">Well done!</h2>
+
+    <div id="result-card">
+      <div class="result-badge-row">
+        <div class="result-badge-dot" id="result-dot"></div>
+        <div class="result-grammar-name" id="result-grammar-name"></div>
+      </div>
+      <div class="result-words" id="result-words"></div>
+      <div class="result-sentence" id="result-sentence"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="next-btn">Next Round → / Próxima →</button>
+      <button class="btn-ghost" id="home-btn">Home / Início</button>
+    </div>
+
+    <button class="export-btn no-print" id="export-btn">
+      ⬇ Export Results as PDF / Exportar Resultados em PDF
+    </button>
+
+    <div id="all-history-wrap" style="display:none;">
+      <div class="history-label" data-en="All Rounds / Todas as Rodadas">All Rounds / Todas as Rodadas</div>
+      <div id="all-history"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const WORDS = {
+  concrete: [
+    "man","woman","boy","girl","baby","child","mother","father","sister","brother",
+    "son","daughter","friend","teacher","doctor","student","nurse","farmer","king","queen",
+    "head","face","eye","ear","nose","mouth","lip","tooth","hand","finger",
+    "arm","leg","foot","hair","skin","heart","bone","blood","dog","cat",
+    "bird","fish","horse","cow","pig","sheep","chicken","rabbit","lion","tiger",
+    "bear","wolf","fox","deer","monkey","elephant","snake","frog","bee","ant",
+    "tree","flower","grass","leaf","branch","seed","fruit","stone","rock","sand",
+    "soil","mud","river","lake","sea","mountain","hill","island","forest","field",
+    "sky","sun","moon","star","cloud","rain","snow","ice","wind","fire",
+    "bread","rice","meat","egg","milk","sugar","salt","oil","butter","cheese",
+    "soup","cake","apple","banana","orange","grape","mango","potato","onion","carrot",
+    "pen","book","bag","box","cup","plate","bowl","spoon","knife","pot",
+    "chair","table","bed","door","window","wall","floor","roof","key","clock",
+    "lamp","mirror","bottle","rope","needle","brush","soap","cloth","blanket","pillow",
+    "ring","coin","paper","board","glass","wire","nail","hammer","bell","drum",
+    "ball","boat","ship","train","car","bus","bike","phone","screen","hat",
+    "shoe","coat","shirt","dress","belt","house","school","church","farm","market",
+  ],
+  proper: [
+    "Mary","John","Peter","Anna","Paul","James","Sarah","David","Grace","Mark",
+    "Ruth","Luke","Noah","Adam","Jane","Tom","Sam","Kate","Leo","Eve",
+    "Africa","Asia","Europe","America","China","India","France","Japan","Brazil","Canada",
+    "Egypt","Mexico","Korea","Russia","London","Paris","Rome","Tokyo","Cairo","Berlin",
+    "Sydney","Madrid","Athens","Seoul","Lagos","Nairobi","Lima","Oslo","Vienna","Geneva",
+  ],
+  abstract: [
+    "love","hate","fear","joy","hope","anger","sadness","pride","shame","guilt",
+    "envy","trust","faith","doubt","worry","courage","kindness","mercy","wisdom","patience",
+    "greed","honesty","loyalty","respect","dignity","freedom","justice","peace","power","truth",
+    "beauty","grace","charm","humor","desire","passion","mood","feeling","thought","memory",
+    "dream","idea","belief","opinion","value","life","death","birth","age","time",
+    "chance","luck","success","failure","loss","gain","war","work","play","rest",
+    "health","sickness","wealth","poverty","hunger","pain","pleasure","safety","danger","risk",
+    "change","growth","progress","culture","religion","law","order","chaos","habit","skill",
+    "talent","effort","choice","decision","action","problem","solution","story","history","future",
+  ],
+  mass: [
+    "water","air","fire","wood","metal","iron","gold","silver","glass","clay",
+    "sand","coal","gas","smoke","steam","ash","ice","snow","mud","wax",
+    "wool","silk","cotton","leather","rubber","paper","cloth","powder","dust","grain",
+    "flour","sugar","salt","oil","cream","butter","cheese","milk","honey","blood",
+    "paint","ink","glue","food","light","heat","noise","music","weather","knowledge",
+    "information","education","language","money","energy","darkness","silence","violence","happiness","strength",
+  ],
+  frequent: [
+    "able","again","age","air","also","always","animal","appear","area","ask",
+    "base","beauty","bed","begin","best","better","big","black","blue","boat",
+    "body","book","box","bring","build","busy","car","care","carry","cause",
+    "center","certain","change","check","children","city","clear","close","cold","color",
+    "come","common","complete","contain","correct","country","cover","cry","cut","dark",
+    "day","decide","deep","develop","direct","dog","door","draw","drive","dry",
+    "early","earth","eat","enough","even","example","eye","face","fact","fall",
+    "family","far","farm","fast","father","feel","few","field","figure","fill",
+    "final","find","fine","fire","first","fish","fly","follow","food","foot",
+    "form","free","friend","front","full","game","get","girl","give","go",
+    "gold","good","great","green","ground","group","grow","hand","happen","hard",
+    "head","hear","heat","help","high","hold","home","horse","hot","hour",
+    "idea","interest","island","just","keep","king","land","language","large","last",
+    "late","laugh","lay","lead","learn","leave","letter","life","line","listen",
+    "little","live","long","look","love","low","machine","main","make","map",
+    "mark","mile","mind","money","moon","more","morning","most","mother","mountain",
+    "move","much","music","name","never","new","next","night","note","notice",
+    "number","often","old","once","open","page","paper","part","pass","pattern",
+    "people","perhaps","person","picture","piece","place","plain","plan","plane","plant",
+    "play","point","possible","power","press","problem","produce","pull","quick","rain",
+    "reach","read","ready","real","red","right","river","road","rock","room",
+    "rule","run","say","school","science","sea","see","seem","sentence","serve",
+    "shape","ship","short","show","simple","sing","sit","size","sleep","slow",
+    "small","snow","song","soon","sound","special","stand","star","start","state",
+    "still","stop","story","street","strong","sun","sure","surface","table","tail",
+    "take","talk","teach","tell","thing","think","thought","time","together","too",
+    "town","travel","tree","true","turn","use","usual","very","voice","wait",
+    "walk","want","war","warm","watch","week","weight","well","white","whole",
+    "wood","word","work","world","write","young",
+  ],
+};
+
+const GRAMMAR_POINTS = [
+  // Simple Present
+  { id:"sp_pos",  label:"Simple Present",          form:"Positive",      labelPt:"Presente Simples",        formPt:"Afirmativa",    color:"#4ade80", hint:"He walks to school. She reads every day.",           hintPt:"Ele vai à escola. Ela lê todos os dias." },
+  { id:"sp_neg",  label:"Simple Present",          form:"Negative",      labelPt:"Presente Simples",        formPt:"Negativa",      color:"#4ade80", hint:"He doesn't walk. She doesn't read at night.",        hintPt:"Ele não anda. Ela não lê à noite." },
+  { id:"sp_int",  label:"Simple Present",          form:"Interrogative",  labelPt:"Presente Simples",        formPt:"Interrogativa", color:"#4ade80", hint:"Does he walk? Do they read books?",                  hintPt:"Ele anda? Eles leem livros?" },
+  // Simple Past
+  { id:"spa_pos", label:"Simple Past",             form:"Positive",      labelPt:"Passado Simples",         formPt:"Afirmativa",    color:"#f97316", hint:"She walked home. They ran fast.",                    hintPt:"Ela foi para casa. Eles correram rápido." },
+  { id:"spa_neg", label:"Simple Past",             form:"Negative",      labelPt:"Passado Simples",         formPt:"Negativa",      color:"#f97316", hint:"She didn't walk. They didn't run.",                  hintPt:"Ela não andou. Eles não correram." },
+  { id:"spa_int", label:"Simple Past",             form:"Interrogative",  labelPt:"Passado Simples",         formPt:"Interrogativa", color:"#f97316", hint:"Did she walk home? Did they run?",                   hintPt:"Ela foi para casa? Eles correram?" },
+  // Simple Future
+  { id:"sf_pos",  label:"Simple Future",           form:"Positive",      labelPt:"Futuro Simples",          formPt:"Afirmativa",    color:"#60a5fa", hint:"I will go. We will eat soon.",                      hintPt:"Eu vou ir. Nós vamos comer em breve." },
+  { id:"sf_neg",  label:"Simple Future",           form:"Negative",      labelPt:"Futuro Simples",          formPt:"Negativa",      color:"#60a5fa", hint:"I won't go. She won't eat meat.",                   hintPt:"Eu não vou. Ela não vai comer carne." },
+  { id:"sf_int",  label:"Simple Future",           form:"Interrogative",  labelPt:"Futuro Simples",          formPt:"Interrogativa", color:"#60a5fa", hint:"Will you go? Will they eat together?",               hintPt:"Você vai? Eles vão comer juntos?" },
+  // Present Continuous
+  { id:"pc_pos",  label:"Present Continuous",      form:"Positive",      labelPt:"Presente Contínuo",       formPt:"Afirmativa",    color:"#a78bfa", hint:"He is running. They are playing outside.",           hintPt:"Ele está correndo. Eles estão jogando." },
+  { id:"pc_neg",  label:"Present Continuous",      form:"Negative",      labelPt:"Presente Contínuo",       formPt:"Negativa",      color:"#a78bfa", hint:"He isn't running. They aren't playing.",             hintPt:"Ele não está correndo. Eles não estão jogando." },
+  { id:"pc_int",  label:"Present Continuous",      form:"Interrogative",  labelPt:"Presente Contínuo",       formPt:"Interrogativa", color:"#a78bfa", hint:"Is he running? Are they playing a game?",            hintPt:"Ele está correndo? Eles estão jogando?" },
+  // Past Continuous
+  { id:"pac_pos", label:"Past Continuous",         form:"Positive",      labelPt:"Passado Contínuo",        formPt:"Afirmativa",    color:"#fb923c", hint:"She was reading. We were singing loudly.",           hintPt:"Ela estava lendo. Nós estávamos cantando." },
+  { id:"pac_neg", label:"Past Continuous",         form:"Negative",      labelPt:"Passado Contínuo",        formPt:"Negativa",      color:"#fb923c", hint:"She wasn't reading. We weren't singing.",            hintPt:"Ela não estava lendo. Nós não estávamos cantando." },
+  { id:"pac_int", label:"Past Continuous",         form:"Interrogative",  labelPt:"Passado Contínuo",        formPt:"Interrogativa", color:"#fb923c", hint:"Was she reading? Were we singing too loud?",         hintPt:"Ela estava lendo? Nós estávamos cantando?" },
+  // Present Perfect
+  { id:"pp_pos",  label:"Present Perfect",         form:"Positive",      labelPt:"Presente Perfeito",       formPt:"Afirmativa",    color:"#34d399", hint:"I have eaten. She has gone home already.",           hintPt:"Eu comi. Ela já foi para casa." },
+  { id:"pp_neg",  label:"Present Perfect",         form:"Negative",      labelPt:"Presente Perfeito",       formPt:"Negativa",      color:"#34d399", hint:"I haven't eaten. She hasn't gone home.",             hintPt:"Eu não comi. Ela não foi para casa." },
+  { id:"pp_int",  label:"Present Perfect",         form:"Interrogative",  labelPt:"Presente Perfeito",       formPt:"Interrogativa", color:"#34d399", hint:"Have you eaten? Has she gone home yet?",             hintPt:"Você comeu? Ela já foi para casa?" },
+  // Past Perfect
+  { id:"pap_pos", label:"Past Perfect",            form:"Positive",      labelPt:"Passado Perfeito",        formPt:"Afirmativa",    color:"#f472b6", hint:"He had left. They had finished before noon.",        hintPt:"Ele tinha saído. Eles tinham terminado." },
+  { id:"pap_neg", label:"Past Perfect",            form:"Negative",      labelPt:"Passado Perfeito",        formPt:"Negativa",      color:"#f472b6", hint:"He hadn't left. They hadn't finished the work.",     hintPt:"Ele não tinha saído. Eles não tinham terminado." },
+  { id:"pap_int", label:"Past Perfect",            form:"Interrogative",  labelPt:"Passado Perfeito",        formPt:"Interrogativa", color:"#f472b6", hint:"Had he left already? Had they finished?",            hintPt:"Ele já tinha saído? Eles tinham terminado?" },
+  // First Conditional (real / possible future)
+  { id:"c1_pos",  label:"1st Conditional",         form:"Positive",      labelPt:"1º Condicional",          formPt:"Afirmativa",    color:"#facc15", hint:"If it rains, I will stay home.",                    hintPt:"Se chover, eu ficarei em casa." },
+  { id:"c1_neg",  label:"1st Conditional",         form:"Negative",      labelPt:"1º Condicional",          formPt:"Negativa",      color:"#facc15", hint:"If it rains, I won't go out.",                      hintPt:"Se chover, eu não sairei." },
+  { id:"c1_int",  label:"1st Conditional",         form:"Interrogative",  labelPt:"1º Condicional",          formPt:"Interrogativa", color:"#facc15", hint:"If it rains, will you stay home?",                  hintPt:"Se chover, você ficará em casa?" },
+  // Second Conditional (unreal / hypothetical present)
+  { id:"c2_pos",  label:"2nd Conditional",         form:"Positive",      labelPt:"2º Condicional",          formPt:"Afirmativa",    color:"#fbbf24", hint:"If I had money, I would travel the world.",         hintPt:"Se eu tivesse dinheiro, viajaria pelo mundo." },
+  { id:"c2_neg",  label:"2nd Conditional",         form:"Negative",      labelPt:"2º Condicional",          formPt:"Negativa",      color:"#fbbf24", hint:"If I had money, I wouldn't waste it.",              hintPt:"Se eu tivesse dinheiro, não o desperdiçaria." },
+  { id:"c2_int",  label:"2nd Conditional",         form:"Interrogative",  labelPt:"2º Condicional",          formPt:"Interrogativa", color:"#fbbf24", hint:"If you had wings, would you fly?",                  hintPt:"Se você tivesse asas, voaria?" },
+  // Third Conditional (unreal / hypothetical past)
+  { id:"c3_pos",  label:"3rd Conditional",         form:"Positive",      labelPt:"3º Condicional",          formPt:"Afirmativa",    color:"#f59e0b", hint:"If I had studied, I would have passed.",            hintPt:"Se eu tivesse estudado, teria passado." },
+  { id:"c3_neg",  label:"3rd Conditional",         form:"Negative",      labelPt:"3º Condicional",          formPt:"Negativa",      color:"#f59e0b", hint:"If I had studied, I wouldn't have failed.",         hintPt:"Se eu tivesse estudado, não teria reprovado." },
+  { id:"c3_int",  label:"3rd Conditional",         form:"Interrogative",  labelPt:"3º Condicional",          formPt:"Interrogativa", color:"#f59e0b", hint:"If you had studied, would you have passed?",        hintPt:"Se você tivesse estudado, teria passado?" },
+  // Passive Voice – Simple Present
+  { id:"pv_sp_pos", label:"Passive – Simple Present",     form:"Positive",      labelPt:"Passiva – Presente Simples",    formPt:"Afirmativa",    color:"#38bdf8", hint:"The letter is written every day.",                      hintPt:"A carta é escrita todos os dias." },
+  { id:"pv_sp_neg", label:"Passive – Simple Present",     form:"Negative",      labelPt:"Passiva – Presente Simples",    formPt:"Negativa",      color:"#38bdf8", hint:"The letter is not written every day.",                  hintPt:"A carta não é escrita todos os dias." },
+  { id:"pv_sp_int", label:"Passive – Simple Present",     form:"Interrogative", labelPt:"Passiva – Presente Simples",    formPt:"Interrogativa", color:"#38bdf8", hint:"Is the letter written every day?",                      hintPt:"A carta é escrita todos os dias?" },
+  // Passive Voice – Simple Past
+  { id:"pv_pa_pos", label:"Passive – Simple Past",        form:"Positive",      labelPt:"Passiva – Passado Simples",     formPt:"Afirmativa",    color:"#7dd3fc", hint:"The door was opened by the teacher.",                   hintPt:"A porta foi aberta pelo professor." },
+  { id:"pv_pa_neg", label:"Passive – Simple Past",        form:"Negative",      labelPt:"Passiva – Passado Simples",     formPt:"Negativa",      color:"#7dd3fc", hint:"The door was not opened by the teacher.",               hintPt:"A porta não foi aberta pelo professor." },
+  { id:"pv_pa_int", label:"Passive – Simple Past",        form:"Interrogative", labelPt:"Passiva – Passado Simples",     formPt:"Interrogativa", color:"#7dd3fc", hint:"Was the door opened by the teacher?",                   hintPt:"A porta foi aberta pelo professor?" },
+  // Passive Voice – Simple Future
+  { id:"pv_sf_pos", label:"Passive – Simple Future",      form:"Positive",      labelPt:"Passiva – Futuro Simples",      formPt:"Afirmativa",    color:"#93c5fd", hint:"The book will be read by many people.",                 hintPt:"O livro será lido por muitas pessoas." },
+  { id:"pv_sf_neg", label:"Passive – Simple Future",      form:"Negative",      labelPt:"Passiva – Futuro Simples",      formPt:"Negativa",      color:"#93c5fd", hint:"The book will not be read by many people.",             hintPt:"O livro não será lido por muitas pessoas." },
+  { id:"pv_sf_int", label:"Passive – Simple Future",      form:"Interrogative", labelPt:"Passiva – Futuro Simples",      formPt:"Interrogativa", color:"#93c5fd", hint:"Will the book be read by many people?",                 hintPt:"O livro será lido por muitas pessoas?" },
+  // Passive Voice – Present Continuous
+  { id:"pv_pc_pos", label:"Passive – Present Continuous", form:"Positive",      labelPt:"Passiva – Presente Contínuo",  formPt:"Afirmativa",    color:"#60a5fa", hint:"The house is being built right now.",                   hintPt:"A casa está sendo construída agora." },
+  { id:"pv_pc_neg", label:"Passive – Present Continuous", form:"Negative",      labelPt:"Passiva – Presente Contínuo",  formPt:"Negativa",      color:"#60a5fa", hint:"The house is not being built right now.",               hintPt:"A casa não está sendo construída agora." },
+  { id:"pv_pc_int", label:"Passive – Present Continuous", form:"Interrogative", labelPt:"Passiva – Presente Contínuo",  formPt:"Interrogativa", color:"#60a5fa", hint:"Is the house being built right now?",                   hintPt:"A casa está sendo construída agora?" },
+  // Passive Voice – Past Continuous
+  { id:"pv_ac_pos", label:"Passive – Past Continuous",    form:"Positive",      labelPt:"Passiva – Passado Contínuo",   formPt:"Afirmativa",    color:"#3b82f6", hint:"The meal was being prepared when I arrived.",           hintPt:"A refeição estava sendo preparada quando cheguei." },
+  { id:"pv_ac_neg", label:"Passive – Past Continuous",    form:"Negative",      labelPt:"Passiva – Passado Contínuo",   formPt:"Negativa",      color:"#3b82f6", hint:"The meal was not being prepared when I arrived.",       hintPt:"A refeição não estava sendo preparada quando cheguei." },
+  { id:"pv_ac_int", label:"Passive – Past Continuous",    form:"Interrogative", labelPt:"Passiva – Passado Contínuo",   formPt:"Interrogativa", color:"#3b82f6", hint:"Was the meal being prepared when you arrived?",         hintPt:"A refeição estava sendo preparada quando você chegou?" },
+  // Passive Voice – Present Perfect
+  { id:"pv_pp_pos", label:"Passive – Present Perfect",    form:"Positive",      labelPt:"Passiva – Presente Perfeito",  formPt:"Afirmativa",    color:"#2563eb", hint:"The letter has been sent already.",                     hintPt:"A carta já foi enviada." },
+  { id:"pv_pp_neg", label:"Passive – Present Perfect",    form:"Negative",      labelPt:"Passiva – Presente Perfeito",  formPt:"Negativa",      color:"#2563eb", hint:"The letter has not been sent yet.",                     hintPt:"A carta ainda não foi enviada." },
+  { id:"pv_pp_int", label:"Passive – Present Perfect",    form:"Interrogative", labelPt:"Passiva – Presente Perfeito",  formPt:"Interrogativa", color:"#2563eb", hint:"Has the letter been sent yet?",                         hintPt:"A carta já foi enviada?" },
+  // Passive Voice – Past Perfect
+  { id:"pv_ap_pos", label:"Passive – Past Perfect",       form:"Positive",      labelPt:"Passiva – Passado Perfeito",   formPt:"Afirmativa",    color:"#1d4ed8", hint:"The window had been broken before we arrived.",         hintPt:"A janela tinha sido quebrada antes de chegarmos." },
+  { id:"pv_ap_neg", label:"Passive – Past Perfect",       form:"Negative",      labelPt:"Passiva – Passado Perfeito",   formPt:"Negativa",      color:"#1d4ed8", hint:"The window had not been broken before we arrived.",     hintPt:"A janela não tinha sido quebrada antes de chegarmos." },
+  { id:"pv_ap_int", label:"Passive – Past Perfect",       form:"Interrogative", labelPt:"Passiva – Passado Perfeito",   formPt:"Interrogativa", color:"#1d4ed8", hint:"Had the window been broken before you arrived?",        hintPt:"A janela tinha sido quebrada antes de você chegar?" },
+  // Passive Voice – Future Continuous
+  { id:"pv_fc_pos", label:"Passive – Future Continuous",  form:"Positive",      labelPt:"Passiva – Futuro Contínuo",    formPt:"Afirmativa",    color:"#1e40af", hint:"The bridge will be being built next year.",             hintPt:"A ponte estará sendo construída no próximo ano." },
+  { id:"pv_fc_neg", label:"Passive – Future Continuous",  form:"Negative",      labelPt:"Passiva – Futuro Contínuo",    formPt:"Negativa",      color:"#1e40af", hint:"The bridge will not be being built next year.",         hintPt:"A ponte não estará sendo construída no próximo ano." },
+  { id:"pv_fc_int", label:"Passive – Future Continuous",  form:"Interrogative", labelPt:"Passiva – Futuro Contínuo",    formPt:"Interrogativa", color:"#1e40af", hint:"Will the bridge be being built next year?",             hintPt:"A ponte estará sendo construída no próximo ano?" },
+  // Future Continuous
+  { id:"fc_pos",  label:"Future Continuous",       form:"Positive",      labelPt:"Futuro Contínuo",         formPt:"Afirmativa",    color:"#e879f9", hint:"I will be working. She will be sleeping.",          hintPt:"Eu estarei trabalhando. Ela estará dormindo." },
+  { id:"fc_neg",  label:"Future Continuous",       form:"Negative",      labelPt:"Futuro Contínuo",         formPt:"Negativa",      color:"#e879f9", hint:"I won't be working. She won't be sleeping.",        hintPt:"Eu não estarei trabalhando. Ela não estará dormindo." },
+  { id:"fc_int",  label:"Future Continuous",       form:"Interrogative",  labelPt:"Futuro Contínuo",         formPt:"Interrogativa", color:"#e879f9", hint:"Will you be working? Will she be sleeping?",        hintPt:"Você estará trabalhando? Ela estará dormindo?" },
+  // Modal Verbs – Ability (can / could)
+  { id:"mv_ab_pos", label:"Modal Verb (Ability)",          form:"Positive",      labelPt:"Verbo Modal (Habilidade)",        formPt:"Afirmativa",    color:"#a3e635", hint:"She can swim very well. He could play the piano as a child.",         hintPt:"Ela sabe nadar muito bem. Ele sabia tocar piano quando criança." },
+  { id:"mv_ab_neg", label:"Modal Verb (Ability)",          form:"Negative",      labelPt:"Verbo Modal (Habilidade)",        formPt:"Negativa",      color:"#a3e635", hint:"He can't drive a car. She couldn't read when she was three.",         hintPt:"Ele não sabe dirigir. Ela não sabia ler quando tinha três anos." },
+  { id:"mv_ab_int", label:"Modal Verb (Ability)",          form:"Interrogative", labelPt:"Verbo Modal (Habilidade)",        formPt:"Interrogativa", color:"#a3e635", hint:"Can you speak French? Could she swim when she was young?",            hintPt:"Você fala francês? Ela sabia nadar quando era jovem?" },
+  // Modal Verbs – Possibility (may / might)
+  { id:"mv_po_pos", label:"Modal Verb (Possibility)",      form:"Positive",      labelPt:"Verbo Modal (Possibilidade)",     formPt:"Afirmativa",    color:"#bef264", hint:"It may rain later. She might come to the party tonight.",             hintPt:"Pode chover mais tarde. Ela talvez venha à festa esta noite." },
+  { id:"mv_po_neg", label:"Modal Verb (Possibility)",      form:"Negative",      labelPt:"Verbo Modal (Possibilidade)",     formPt:"Negativa",      color:"#bef264", hint:"It may not rain today. He might not finish the work on time.",        hintPt:"Talvez não chova hoje. Ele talvez não termine o trabalho a tempo." },
+  { id:"mv_po_int", label:"Modal Verb (Possibility)",      form:"Interrogative", labelPt:"Verbo Modal (Possibilidade)",     formPt:"Interrogativa", color:"#bef264", hint:"Might she be at home? May I ask you a question?",                   hintPt:"Ela pode estar em casa? Posso fazer uma pergunta?" },
+  // Modal Verbs – Permission (may / can)
+  { id:"mv_pe_pos", label:"Modal Verb (Permission)",       form:"Positive",      labelPt:"Verbo Modal (Permissão)",         formPt:"Afirmativa",    color:"#d9f99d", hint:"You may leave the room now. You can use my pen.",                   hintPt:"Você pode sair da sala agora. Você pode usar minha caneta." },
+  { id:"mv_pe_neg", label:"Modal Verb (Permission)",       form:"Negative",      labelPt:"Verbo Modal (Permissão)",         formPt:"Negativa",      color:"#d9f99d", hint:"You may not enter this area. You cannot take photos here.",          hintPt:"Você não pode entrar nesta área. Você não pode tirar fotos aqui." },
+  { id:"mv_pe_int", label:"Modal Verb (Permission)",       form:"Interrogative", labelPt:"Verbo Modal (Permissão)",         formPt:"Interrogativa", color:"#d9f99d", hint:"May I sit here? Can I borrow your book?",                           hintPt:"Posso sentar aqui? Posso pegar emprestado seu livro?" },
+  // Modal Verbs – Advice (should)
+  { id:"mv_ad_pos", label:"Modal Verb (Advice)",           form:"Positive",      labelPt:"Verbo Modal (Conselho)",          formPt:"Afirmativa",    color:"#86efac", hint:"You should drink more water. She should rest after work.",           hintPt:"Você deveria beber mais água. Ela deveria descansar após o trabalho." },
+  { id:"mv_ad_neg", label:"Modal Verb (Advice)",           form:"Negative",      labelPt:"Verbo Modal (Conselho)",          formPt:"Negativa",      color:"#86efac", hint:"You shouldn't eat so much sugar. He shouldn't drive so fast.",       hintPt:"Você não deveria comer tanto açúcar. Ele não deveria dirigir tão rápido." },
+  { id:"mv_ad_int", label:"Modal Verb (Advice)",           form:"Interrogative", labelPt:"Verbo Modal (Conselho)",          formPt:"Interrogativa", color:"#86efac", hint:"Should I see a doctor? Should she take the medicine?",               hintPt:"Devo consultar um médico? Ela deveria tomar o remédio?" },
+  // Modal Verbs – Strong Advice / Moral Obligation (ought to)
+  { id:"mv_sa_pos", label:"Modal Verb (Strong Advice)",    form:"Positive",      labelPt:"Verbo Modal (Conselho Forte)",    formPt:"Afirmativa",    color:"#4ade80", hint:"You ought to apologise to her. He ought to respect his parents.",   hintPt:"Você deveria se desculpar com ela. Ele deveria respeitar os pais." },
+  { id:"mv_sa_neg", label:"Modal Verb (Strong Advice)",    form:"Negative",      labelPt:"Verbo Modal (Conselho Forte)",    formPt:"Negativa",      color:"#4ade80", hint:"You ought not to lie. He ought not to treat people that way.",       hintPt:"Você não deveria mentir. Ele não deveria tratar as pessoas assim." },
+  { id:"mv_sa_int", label:"Modal Verb (Strong Advice)",    form:"Interrogative", labelPt:"Verbo Modal (Conselho Forte)",    formPt:"Interrogativa", color:"#4ade80", hint:"Ought I to call her? Ought he to apologise to his friend?",          hintPt:"Devo ligá-la? Ele deveria se desculpar com o amigo?" },
+  // Modal Verbs – Obligation (must)
+  { id:"mv_ob_pos", label:"Modal Verb (Obligation)",       form:"Positive",      labelPt:"Verbo Modal (Obrigação)",         formPt:"Afirmativa",    color:"#34d399", hint:"You must wear a seatbelt. Students must arrive on time.",            hintPt:"Você deve usar o cinto de segurança. Os alunos devem chegar na hora." },
+  { id:"mv_ob_neg", label:"Modal Verb (Obligation)",       form:"Negative",      labelPt:"Verbo Modal (Obrigação)",         formPt:"Negativa",      color:"#34d399", hint:"You must not smoke here. Children must not run near the pool.",      hintPt:"Você não deve fumar aqui. As crianças não devem correr perto da piscina." },
+  { id:"mv_ob_int", label:"Modal Verb (Obligation)",       form:"Interrogative", labelPt:"Verbo Modal (Obrigação)",         formPt:"Interrogativa", color:"#34d399", hint:"Must I bring my passport? Must she attend the meeting?",             hintPt:"Devo trazer meu passaporte? Ela deve participar da reunião?" },
+  // Modal Verbs – Necessity / No Obligation (need / needn't)
+  { id:"mv_ne_pos", label:"Modal Verb (Necessity)",        form:"Positive",      labelPt:"Verbo Modal (Necessidade)",       formPt:"Afirmativa",    color:"#10b981", hint:"You need to bring your ID. She needs to see a doctor soon.",         hintPt:"Você precisa trazer seu documento. Ela precisa ver um médico em breve." },
+  { id:"mv_ne_neg", label:"Modal Verb (Necessity)",        form:"Negative",      labelPt:"Verbo Modal (Necessidade)",       formPt:"Negativa",      color:"#10b981", hint:"You needn't worry about it. He doesn't need to come early.",         hintPt:"Você não precisa se preocupar. Ele não precisa vir cedo." },
+  { id:"mv_ne_int", label:"Modal Verb (Necessity)",        form:"Interrogative", labelPt:"Verbo Modal (Necessidade)",       formPt:"Interrogativa", color:"#10b981", hint:"Need I bring anything? Does she need to sign the form?",             hintPt:"Preciso trazer alguma coisa? Ela precisa assinar o formulário?" },
+  // Modal Verbs – Logical Deduction / Certainty (must / can't)
+  { id:"mv_ld_pos", label:"Modal Verb (Deduction)",        form:"Positive",      labelPt:"Verbo Modal (Dedução)",           formPt:"Afirmativa",    color:"#059669", hint:"She must be tired after the journey. He must know the answer.",      hintPt:"Ela deve estar cansada após a viagem. Ele deve saber a resposta." },
+  { id:"mv_ld_neg", label:"Modal Verb (Deduction)",        form:"Negative",      labelPt:"Verbo Modal (Dedução)",           formPt:"Negativa",      color:"#059669", hint:"That can't be true. He can't be the teacher — he's too young.",      hintPt:"Isso não pode ser verdade. Ele não pode ser o professor — é jovem demais." },
+  { id:"mv_ld_int", label:"Modal Verb (Deduction)",        form:"Interrogative", labelPt:"Verbo Modal (Dedução)",           formPt:"Interrogativa", color:"#059669", hint:"Could this be the right answer? Must she be the new student?",       hintPt:"Esta pode ser a resposta certa? Ela deve ser a nova aluna?" },
+  // Modal Verbs – Request / Polite Offer (would / could)
+  { id:"mv_rq_pos", label:"Modal Verb (Request)",          form:"Positive",      labelPt:"Verbo Modal (Pedido)",            formPt:"Afirmativa",    color:"#047857", hint:"Could you help me, please? Would you pass the salt?",               hintPt:"Você poderia me ajudar, por favor? Você passaria o sal?" },
+  { id:"mv_rq_neg", label:"Modal Verb (Request)",          form:"Negative",      labelPt:"Verbo Modal (Pedido)",            formPt:"Negativa",      color:"#047857", hint:"I wouldn't ask if it weren't important. I couldn't do it alone.",    hintPt:"Eu não pediria se não fosse importante. Eu não conseguiria fazer sozinho." },
+  { id:"mv_rq_int", label:"Modal Verb (Request)",          form:"Interrogative", labelPt:"Verbo Modal (Pedido)",            formPt:"Interrogativa", color:"#047857", hint:"Would you mind closing the door? Could you speak more slowly?",      hintPt:"Você se importaria de fechar a porta? Você poderia falar mais devagar?" },
+  // Modal Verbs – Habit in the Past (used to / would)
+  { id:"mv_hp_pos", label:"Modal Verb (Past Habit)",       form:"Positive",      labelPt:"Verbo Modal (Hábito Passado)",    formPt:"Afirmativa",    color:"#065f46", hint:"She used to walk to school. He would read every night as a child.",  hintPt:"Ela costumava ir à escola a pé. Ele lia toda noite quando criança." },
+  { id:"mv_hp_neg", label:"Modal Verb (Past Habit)",       form:"Negative",      labelPt:"Verbo Modal (Hábito Passado)",    formPt:"Negativa",      color:"#065f46", hint:"He didn't use to eat vegetables. She wouldn't talk to strangers.",   hintPt:"Ele não costumava comer legumes. Ela não falava com estranhos." },
+  { id:"mv_hp_int", label:"Modal Verb (Past Habit)",       form:"Interrogative", labelPt:"Verbo Modal (Hábito Passado)",    formPt:"Interrogativa", color:"#065f46", hint:"Did you use to play sport? Would she walk to school every day?",     hintPt:"Você costumava praticar esportes? Ela ia à escola a pé todos os dias?" },
+  // Comparative Degree
+  { id:"cmp_pos", label:"Comparative Degree",      form:"Positive",      labelPt:"Grau Comparativo",        formPt:"Afirmativa",    color:"#2dd4bf", hint:"She is taller than her brother. This book is more interesting than that one.",   hintPt:"Ela é mais alta que o irmão. Este livro é mais interessante." },
+  { id:"cmp_neg", label:"Comparative Degree",      form:"Negative",      labelPt:"Grau Comparativo",        formPt:"Negativa",      color:"#2dd4bf", hint:"He is not faster than his friend. This road isn't longer than that one.",        hintPt:"Ele não é mais rápido que o amigo. Esta estrada não é mais longa." },
+  { id:"cmp_int", label:"Comparative Degree",      form:"Interrogative",  labelPt:"Grau Comparativo",        formPt:"Interrogativa", color:"#2dd4bf", hint:"Is the mountain higher than the hill? Is gold more valuable than silver?",      hintPt:"A montanha é mais alta que a colina? O ouro é mais valioso?" },
+  // Superlative Degree
+  { id:"sup_pos", label:"Superlative Degree",      form:"Positive",      labelPt:"Grau Superlativo",        formPt:"Afirmativa",    color:"#06b6d4", hint:"She is the tallest in the class. This is the most beautiful city in the world.", hintPt:"Ela é a mais alta da turma. Esta é a cidade mais bonita do mundo." },
+  { id:"sup_neg", label:"Superlative Degree",      form:"Negative",      labelPt:"Grau Superlativo",        formPt:"Negativa",      color:"#06b6d4", hint:"This is not the hardest problem. He isn't the most talented player.",           hintPt:"Este não é o problema mais difícil. Ele não é o jogador mais talentoso." },
+  { id:"sup_int", label:"Superlative Degree",      form:"Interrogative",  labelPt:"Grau Superlativo",        formPt:"Interrogativa", color:"#06b6d4", hint:"Is this the deepest river? Is she the most hardworking student in school?",    hintPt:"Este é o rio mais profundo? Ela é a aluna mais esforçada da escola?" },
+];
+
+const allWords = [...WORDS.concrete, ...WORDS.proper, ...WORDS.abstract, ...WORDS.mass, ...WORDS.frequent];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let lang = 'en';
+let timerMinutes = 2;
+let wordCount = 5;
+let sentenceCount = 1;
+let difficultyLevel = 'A1';
+let roundLimit = 10;
+let soundEnabled = true;
+let beepInterval = null;
+let audioCtx = null;
+
+// Level definitions
+const LEVELS = {
+  A1: {
+    label: 'A1 – Beginner',
+    labelPt: 'A1 – Iniciante',
+    color: '#16a34a',
+    description: 'Simple everyday words · Present & Past tenses · 1 sentence · Concrete nouns only',
+    descriptionPt: 'Palavras simples do dia a dia · Presente e Passado · 1 frase · Apenas substantivos concretos',
+    grammarFilter: ['sp_pos','sp_neg','sp_int','spa_pos','spa_neg','spa_int','sf_pos','sf_neg','sf_int'],
+    wordPool: ['concrete'],
+    maxWords: 3,
+    minWords: 3,
+    maxSentences: 1,
+  },
+  A2: {
+    label: 'A2 – Elementary',
+    labelPt: 'A2 – Elementar',
+    color: '#2563eb',
+    description: 'Common words · Continuous & Perfect tenses · Modal verbs (ability, permission, possibility) · Up to 2 sentences',
+    descriptionPt: 'Palavras comuns · Tempos contínuos e perfeitos · Verbos modais básicos · Até 2 frases',
+    grammarFilter: [
+      'sp_pos','sp_neg','sp_int','spa_pos','spa_neg','spa_int','sf_pos','sf_neg','sf_int',
+      'pc_pos','pc_neg','pc_int','pac_pos','pac_neg','pac_int',
+      'pp_pos','pp_neg','pp_int',
+      'mv_ab_pos','mv_ab_neg','mv_ab_int',
+      'mv_po_pos','mv_po_neg','mv_po_int',
+      'mv_pe_pos','mv_pe_neg','mv_pe_int',
+      'cmp_pos','cmp_neg','cmp_int',
+    ],
+    wordPool: ['concrete','proper','frequent'],
+    maxWords: 5,
+    minWords: 3,
+    maxSentences: 2,
+  },
+  B1: {
+    label: 'B1 – Intermediate',
+    labelPt: 'B1 – Intermediário',
+    color: '#7c3aed',
+    description: 'All words · All tenses · Conditionals · Passive voice · Modal verbs · Comparatives · Up to 3 sentences',
+    descriptionPt: 'Todas as palavras · Todos os tempos · Condicionais · Voz passiva · Verbos modais · Comparativos · Até 3 frases',
+    grammarFilter: null, // all
+    wordPool: ['concrete','proper','abstract','mass','frequent'],
+    maxWords: 7,
+    minWords: 5,
+    maxSentences: 3,
+  },
+};
+let currentGrammars = []; // array: 1 item for A1, up to 2 for A2/B1
+let currentWords = [];
+let timeLeft = 0;
+let timerInterval = null;
+let round = 0;
+let history = [];
+let usedWords = [];
+
+// ── Language ──────────────────────────────────────────────────────────────────
+function setLang(l) {
+  lang = l;
+  document.body.classList.toggle('pt', l === 'pt');
+  document.getElementById('btn-en').classList.toggle('active', l === 'en');
+  document.getElementById('btn-pt').classList.toggle('active', l === 'pt');
+
+  // Toggle inline en/pt spans
+  document.querySelectorAll('.en-inline').forEach(el => el.style.display = l === 'en' ? '' : 'none');
+  document.querySelectorAll('.pt').forEach(el => el.style.display = l === 'pt' ? '' : 'none');
+  document.querySelectorAll('.en-block').forEach(el => el.style.display = l === 'en' ? 'block' : 'none');
+  document.querySelectorAll('.pt-block').forEach(el => el.style.display = l === 'pt' ? 'block' : 'none');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function pickRandom(arr, n) { return shuffle(arr).slice(0, n); }
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(name + '-screen').classList.add('active');
+}
+
+// ── Pill selection ────────────────────────────────────────────────────────────
+function setupPills(containerId, onSelect) {
+  document.getElementById(containerId).addEventListener('click', e => {
+    if (!e.target.classList.contains('pill')) return;
+    document.querySelectorAll(`#${containerId} .pill`).forEach(p => p.classList.remove('active'));
+    e.target.classList.add('active');
+    onSelect(Number(e.target.dataset.value));
+  });
+}
+setupPills('timer-pills',    v => timerMinutes = v);
+setupPills('word-pills',     v => wordCount = v);
+setupPills('sentence-pills', v => sentenceCount = v);
+setupPills('round-limit-pills', v => roundLimit = v);
+setupPills('sound-pills', v => soundEnabled = v === 'on');
+
+// ── Audio beep ─────────────────────────────────────────────────────────────
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playBeep(freq = 880, duration = 0.12, vol = 0.35) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) { /* audio not available */ }
+}
+
+function playUrgentBeep() {
+  // Double beep for urgency
+  playBeep(1000, 0.1, 0.4);
+  setTimeout(() => playBeep(1000, 0.1, 0.4), 180);
+}
+
+function playFinalBeep() {
+  // Three descending beeps when time is up
+  playBeep(880, 0.15, 0.5);
+  setTimeout(() => playBeep(740, 0.15, 0.5), 200);
+  setTimeout(() => playBeep(620, 0.25, 0.5), 400);
+}
+
+function startBeeping() {
+  stopBeeping();
+  if (!soundEnabled) return;
+  // Beep every 5 seconds during last 30 seconds
+  beepInterval = setInterval(() => {
+    if (timeLeft <= 30 && timeLeft > 0) playUrgentBeep();
+  }, 5000);
+  // Immediate first beep when entering last 30s
+  playUrgentBeep();
+}
+
+function stopBeeping() {
+  if (beepInterval) { clearInterval(beepInterval); beepInterval = null; }
+}
+
+// Level button setup
+function updateLevelDescription() {
+  const lvl = LEVELS[difficultyLevel];
+  const desc = lang === 'pt' ? lvl.descriptionPt : lvl.description;
+  const el = document.getElementById('level-description');
+  el.textContent = desc;
+  el.style.borderLeftColor = lvl.color;
+}
+
+document.getElementById('level-btns').addEventListener('click', e => {
+  const btn = e.target.closest('.level-btn');
+  if (!btn) return;
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  difficultyLevel = btn.dataset.level;
+  updateLevelDescription();
+});
+updateLevelDescription();
+
+// ── Game flow ─────────────────────────────────────────────────────────────────
+document.getElementById('start-btn').addEventListener('click', startRound);
+
+function startRound() {
+  const lvl = LEVELS[difficultyLevel];
+
+  // Filter grammar points by level
+  const availableGrammar = lvl.grammarFilter
+    ? GRAMMAR_POINTS.filter(g => lvl.grammarFilter.includes(g.id))
+    : GRAMMAR_POINTS;
+  // A1 = 1 grammar point; A2 = sometimes 2 (50% chance); B1 = always 2
+  let grammarCount = 1;
+  if (difficultyLevel === 'B1') grammarCount = 2;
+  else if (difficultyLevel === 'A2') grammarCount = Math.random() < 0.5 ? 2 : 1;
+  const grammars = pickRandom(availableGrammar, grammarCount);
+
+  // Filter word pool by level
+  const levelWords = lvl.wordPool.flatMap(cat => WORDS[cat] || []);
+  const effectiveWordCount = Math.min(wordCount, lvl.maxWords);
+  const pool = levelWords.filter(w => !usedWords.includes(w));
+  const words = pickRandom(pool.length >= effectiveWordCount ? pool : levelWords, effectiveWordCount);
+
+  currentGrammars = grammars;
+  currentWords = words;
+  timeLeft = timerMinutes * 60;
+  wasIn30 = false;
+  stopBeeping();
+  document.getElementById('sentence-input').value = '';
+
+  const badge = document.getElementById('grammar-badge');
+  if (currentGrammars.length === 1) {
+    const grammar = currentGrammars[0];
+    badge.style.background = grammar.color + '18';
+    badge.style.border = `1px solid ${grammar.color}44`;
+    document.getElementById('badge-dot').style.background = grammar.color;
+    document.getElementById('badge-name').style.color = grammar.color;
+    const formLabel = lang === 'pt' ? grammar.formPt : grammar.form;
+    document.getElementById('badge-name').textContent = (lang === 'pt' ? grammar.labelPt : grammar.label) + ' — ' + formLabel;
+    document.getElementById('badge-hint').textContent = lang === 'pt' ? grammar.hintPt : grammar.hint;
+  } else {
+    // Two grammar points — split badge display
+    const g1 = currentGrammars[0], g2 = currentGrammars[1];
+    badge.style.background = 'rgba(255,255,255,0.04)';
+    badge.style.border = '1px solid rgba(255,255,255,0.12)';
+    document.getElementById('badge-dot').style.background = `linear-gradient(135deg, ${g1.color}, ${g2.color})`;
+    document.getElementById('badge-dot').style.background = g1.color;
+    document.getElementById('badge-name').style.color = '#f0ede6';
+    const f1 = (lang === 'pt' ? g1.labelPt : g1.label) + ' — ' + (lang === 'pt' ? g1.formPt : g1.form);
+    const f2 = (lang === 'pt' ? g2.labelPt : g2.label) + ' — ' + (lang === 'pt' ? g2.formPt : g2.form);
+    document.getElementById('badge-name').innerHTML =
+      `<span style="color:${g1.color}">${f1}</span> <span style="color:rgba(255,255,255,0.3); margin:0 4px;">+</span> <span style="color:${g2.color}">${f2}</span>`;
+    document.getElementById('badge-hint').innerHTML =
+      `<span style="color:${g1.color}88">${lang === 'pt' ? g1.hintPt : g1.hint}</span><br><span style="color:${g2.color}88">${lang === 'pt' ? g2.hintPt : g2.hint}</span>`;
+  }
+
+  const chipsEl = document.getElementById('word-chips');
+  chipsEl.innerHTML = '';
+  words.forEach(w => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = w;
+    chipsEl.appendChild(chip);
+  });
+
+  const lvlConfig = LEVELS[difficultyLevel];
+  const roundWord = lang === 'pt' ? 'Rodada' : 'Round';
+  const progress = roundLimit > 0 ? ` ${round + 1}/${roundLimit}` : ` ${round + 1}`;
+  document.getElementById('round-label').innerHTML =
+    `${roundWord}${progress} <span class="level-indicator" style="background:${lvlConfig.color}22; color:${lvlConfig.color}; border:1px solid ${lvlConfig.color}44;">${difficultyLevel}</span>`;
+
+  // Show finish button only in unlimited mode and only when at least 1 round played
+  const finishBtn = document.getElementById('finish-btn');
+  if (roundLimit === 0 && round > 0) {
+    finishBtn.style.display = 'block';
+  } else {
+    finishBtn.style.display = 'none';
+  }
+
+  // Sentence instruction
+  const instrEl = document.getElementById('sentence-instruction');
+  const multiGrammar = currentGrammars.length > 1;
+  if (sentenceCount === 1) {
+    instrEl.innerHTML = multiGrammar
+      ? `✍️ Write <strong>1 sentence</strong> (or 2 short ones) using the words above and <strong>both grammar points</strong> shown.`
+      : `✍️ Write <strong>1 sentence</strong> using all the words above and the grammar point shown.`;
+  } else {
+    instrEl.innerHTML = multiGrammar
+      ? `✍️ Write <strong>${sentenceCount} sentences</strong> using the words above. Try to use <strong>both grammar points</strong> — one in each sentence if possible.`
+      : `✍️ Write <strong>${sentenceCount} sentences</strong> combining the words above. Each sentence should use at least one word and the grammar point shown.`;
+  }
+  updateTimerDisplay();
+  showScreen('game');
+  document.getElementById('sentence-input').focus();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0) { clearInterval(timerInterval); submitRound(true); }
+  }, 1000);
+}
+
+let wasIn30 = false;
+function updateTimerDisplay() {
+  const total = timerMinutes * 60;
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const display = document.getElementById('timer-display');
+  display.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  display.className = timeLeft <= 30 ? 'urgent' : timeLeft <= 60 ? 'warning' : '';
+  const bar = document.getElementById('progress-bar');
+  bar.style.width = Math.max(0, timeLeft / total * 100) + '%';
+  bar.style.background = timeLeft <= 30 ? '#ef4444' : timeLeft <= 60 ? '#f97316' : '#6366f1';
+
+  // Trigger beeping when entering last 30 seconds
+  if (timeLeft === 30 && !wasIn30) {
+    wasIn30 = true;
+    startBeeping();
+  }
+  // Final beep when time is up
+  if (timeLeft === 0) {
+    stopBeeping();
+    playFinalBeep();
+  }
+}
+
+function submitRound(auto = false) {
+  clearInterval(timerInterval);
+  stopBeeping();
+  const sentence = document.getElementById('sentence-input').value.trim() || (lang === 'pt' ? '(sem resposta)' : '(no response)');
+  const name = document.getElementById('student-name').value.trim() || (lang === 'pt' ? 'Anônimo' : 'Anonymous');
+  const email = document.getElementById('student-email').value.trim() || '';
+  const optin = document.getElementById('optin-check').checked;
+  const entry = { words: [...currentWords], grammars: [...currentGrammars], grammar: currentGrammars[0], sentence, round: round + 1, name, email, optin, sentenceCount, level: difficultyLevel };
+  // Send to Formspree on first round only if opted in
+  if (optin && email && round === 0) {
+    submitToFormspree(name, email);
+  }
+  history.push(entry);
+  usedWords.push(...currentWords);
+  round++;
+
+  // Check if session limit reached
+  if (roundLimit > 0 && round >= roundLimit) {
+    showComplete();
+  } else {
+    showResult(entry);
+  }
+}
+
+function showResult(entry) {
+  const roundWord = lang === 'pt' ? 'Rodada' : 'Round';
+  const completeWord = lang === 'pt' ? 'Completa!' : 'Complete';
+  document.getElementById('result-round-label').textContent = `${roundWord} ${entry.round} ${completeWord}`;
+  document.getElementById('result-title').textContent = lang === 'pt' ? 'Muito bem!' : 'Well done!';
+
+  const card = document.getElementById('result-card');
+  const primaryGrammar = (entry.grammars && entry.grammars[0]) || entry.grammar;
+  card.style.background = primaryGrammar.color + '0f';
+  card.style.border = `1px solid ${primaryGrammar.color}33`;
+  document.getElementById('result-dot').style.background = primaryGrammar.color;
+  const gName = document.getElementById('result-grammar-name');
+  const entryGrammars = entry.grammars || [entry.grammar];
+  if (entryGrammars.length === 1) {
+    const entryFormLabel = lang === 'pt' ? entryGrammars[0].formPt : entryGrammars[0].form;
+    gName.textContent = (lang === 'pt' ? entryGrammars[0].labelPt : entryGrammars[0].label) + ' — ' + entryFormLabel;
+    gName.style.color = entryGrammars[0].color;
+  } else {
+    const g1 = entryGrammars[0], g2 = entryGrammars[1];
+    const f1 = (lang === 'pt' ? g1.labelPt : g1.label) + ' — ' + (lang === 'pt' ? g1.formPt : g1.form);
+    const f2 = (lang === 'pt' ? g2.labelPt : g2.label) + ' — ' + (lang === 'pt' ? g2.formPt : g2.form);
+    gName.innerHTML = `<span style="color:${g1.color}">${f1}</span> <span style="opacity:0.4">+</span> <span style="color:${g2.color}">${f2}</span>`;
+    gName.style.color = '';
+  }
+
+  const wordsEl = document.getElementById('result-words');
+  wordsEl.innerHTML = '';
+  entry.words.forEach(w => {
+    const chip = document.createElement('span');
+    chip.className = 'result-word-chip';
+    chip.style.background = primaryGrammar.color + '18';
+    chip.style.border = `1px solid ${primaryGrammar.color}33`;
+    chip.textContent = w;
+    wordsEl.appendChild(chip);
+  });
+
+  const sentEl = document.getElementById('result-sentence');
+  sentEl.textContent = `"${entry.sentence}"`;
+  sentEl.style.borderLeftColor = primaryGrammar.color;
+
+  const prev = history.slice(0, -1).reverse();
+  const wrap = document.getElementById('all-history-wrap');
+  const allHistEl = document.getElementById('all-history');
+  if (prev.length > 0) {
+    allHistEl.innerHTML = '';
+    prev.forEach(h => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const hGsR = h.grammars || [h.grammar];
+      const grammarLabel = hGsR.map(g => (lang === 'pt' ? g.labelPt : g.label) + ' — ' + (lang === 'pt' ? g.formPt : g.form)).join(' + ');
+      const roundLabel = lang === 'pt' ? 'Rodada' : 'Round';
+      item.innerHTML = `
+        <div class="history-grammar" style="color:${hGs2[0].color}">${roundLabel} ${h.round} · ${grammarLabel}</div>
+        <div class="history-sentence">${h.sentence}</div>
+      `;
+      allHistEl.appendChild(item);
+    });
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+
+  showScreen('result');
+}
+
+document.getElementById('submit-btn').addEventListener('click', () => submitRound(false));
+
+document.getElementById('finish-btn').addEventListener('click', () => {
+  // Submit current sentence (if any) then show complete screen
+  clearInterval(timerInterval);
+  stopBeeping();
+  const sentence = document.getElementById('sentence-input').value.trim() || (lang === 'pt' ? '(sem resposta)' : '(no response)');
+  const name = document.getElementById('student-name').value.trim() || (lang === 'pt' ? 'Anônimo' : 'Anonymous');
+  const email = document.getElementById('student-email').value.trim() || '';
+  const optin = document.getElementById('optin-check').checked;
+  if (sentence && sentence !== '(no response)' && sentence !== '(sem resposta)') {
+    const entry = { words: [...currentWords], grammars: [...currentGrammars], grammar: currentGrammars[0], sentence, round: round + 1, name, email, optin, sentenceCount, level: difficultyLevel };
+    history.push(entry);
+    usedWords.push(...currentWords);
+    round++;
+  }
+  if (history.length > 0) {
+    showComplete();
+  } else {
+    goHome();
+  }
+});
+document.getElementById('quit-btn').addEventListener('click', goHome);
+document.getElementById('next-btn').addEventListener('click', startRound);
+document.getElementById('home-btn').addEventListener('click', goHome);
+
+async function requestAIFeedback(entry) {
+  const el = document.getElementById(`ai-feedback-${entry.round}`);
+  if (!el) return;
+
+  const entryGs = entry.grammars || [entry.grammar];
+  const gLabel = entryGs.map(g => g.label + ' — ' + g.form).join(' + ');
+  const prompt = `You are an English language teacher giving concise feedback to a ${entry.level || 'A1'} level student.
+
+The student was asked to write a sentence using:
+- Grammar point: ${gLabel}
+- Required words: ${entry.words.join(', ')}
+- Number of sentences required: ${entry.sentenceCount}
+
+The student wrote:
+"${entry.sentence}"
+
+Respond ONLY with a valid JSON object (no markdown, no backticks) with exactly these fields:
+{
+  "score": <integer 1-5>,
+  "grammar_ok": <boolean>,
+  "grammar_comment": "<one sentence about grammar correctness>",
+  "word_usage": "<one sentence about how well the required words were used>",
+  "suggestion": "<an improved version of the sentence, or empty string if perfect>",
+  "encouragement": "<one short encouraging remark>"
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content?.map(c => c.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const fb = JSON.parse(clean);
+
+    const stars = Array.from({length: 5}, (_, i) =>
+      `<span style="color:${i < fb.score ? '#facc15' : 'rgba(255,255,255,0.15)'}">${i < fb.score ? '★' : '★'}</span>`
+    ).join('');
+
+    el.innerHTML = `
+      <div class="ai-feedback-header"><span class="ai-icon">🤖</span> AI Feedback</div>
+      <div class="ai-score">${stars}</div>
+      <div class="${fb.grammar_ok ? 'ai-grammar-ok' : 'ai-grammar-err'}">
+        ${fb.grammar_ok ? '✅' : '❌'} ${fb.grammar_comment}
+      </div>
+      <div class="ai-comment">📝 ${fb.word_usage}</div>
+      ${fb.suggestion ? `<div class="ai-suggestion">💡 Try: "${fb.suggestion}"</div>` : ''}
+      <div class="ai-comment" style="margin-top:4px;">✨ ${fb.encouragement}</div>
+    `;
+  } catch(e) {
+    el.innerHTML = `<div class="ai-comment" style="color:#f87171;">⚠️ Feedback unavailable. Check your connection.</div>`;
+  }
+}
+
+function showComplete() {
+  const name = history[0]?.name || (lang === 'pt' ? 'Aluno' : 'Student');
+  const lvl = LEVELS[difficultyLevel];
+
+  // Eyebrow
+  document.getElementById('complete-eyebrow').textContent =
+    lang === 'pt' ? 'Sessão Completa!' : 'Session Complete!';
+
+  // Score ring
+  document.getElementById('score-num').textContent = history.length;
+  document.getElementById('score-label').textContent = lang === 'pt' ? 'rodadas' : 'rounds';
+
+  // Title
+  const titles = {
+    en: ['Great effort!', 'Excellent work!', 'Well done!', 'Fantastic!', 'Brilliant!'],
+    pt: ['Bom esforço!', 'Excelente trabalho!', 'Muito bem!', 'Fantástico!', 'Brilhante!'],
+  };
+  const t = titles[lang][Math.floor(Math.random() * titles[lang].length)];
+  document.getElementById('complete-title').textContent = t;
+
+  // Meta
+  const now = new Date().toLocaleDateString(lang === 'pt' ? 'pt-BR' : 'en-GB', { year:'numeric', month:'long', day:'numeric' });
+  document.getElementById('complete-meta').innerHTML =
+    `<strong>${name}</strong> &nbsp;·&nbsp; ${lvl[lang === 'pt' ? 'labelPt' : 'label']} &nbsp;·&nbsp; ${now}`;
+
+  // Summary list
+  const summaryEl = document.getElementById('complete-summary');
+  summaryEl.innerHTML = '';
+  history.forEach(h => {
+    const hGrammars = h.grammars || [h.grammar];
+    const gLabel = hGrammars.map(g =>
+      (lang === 'pt' ? g.labelPt : g.label) + ' — ' + (lang === 'pt' ? g.formPt : g.form)
+    ).join(' + ');
+    const gColor = hGrammars[0].color;
+    const roundWord = lang === 'pt' ? 'Rodada' : 'Round';
+    const wordsWord = lang === 'pt' ? 'Palavras' : 'Words';
+    const item = document.createElement('div');
+    item.className = 'complete-item';
+    item.innerHTML = `
+      <div class="complete-item-header">
+        <div class="complete-dot" style="background:${gColor}"></div>
+        <div class="complete-grammar" style="color:${gColor}">${roundWord} ${h.round} · ${gLabel}</div>
+      </div>
+      <div class="complete-words">${wordsWord}: ${h.words.join(', ')}</div>
+      <div class="complete-sentence" style="border-left-color:${(h.grammars||[h.grammar])[0].color}">${h.sentence}</div>
+      <div class="ai-feedback-wrap" id="ai-feedback-${h.round}">
+        <div class="ai-loading"><div class="ai-spinner"></div> AI is reviewing this sentence…</div>
+      </div>
+    `;
+    summaryEl.appendChild(item);
+  });
+
+  showScreen('complete');
+
+  // Request AI feedback for each round
+  history.forEach(h => requestAIFeedback(h));
+}
+
+document.getElementById('complete-export-btn').addEventListener('click', exportResults);
+document.getElementById('complete-home-btn').addEventListener('click', goHome);
+
+function goHome() {
+  clearInterval(timerInterval);
+  stopBeeping();
+  const savedHistory = [...history]; // save before reset
+  round = 0;
+  history = [];
+  usedWords = [];
+  wasIn30 = false;
+  const histEl = document.getElementById('history-list');
+  const histWrap = document.getElementById('home-history');
+  if (savedHistory.length > 0) {
+    histEl.innerHTML = '';
+    [...savedHistory].reverse().forEach(h => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const hGs = h.grammars || [h.grammar];
+      const grammarLabel = hGs.map(g => (lang === 'pt' ? g.labelPt : g.label) + ' — ' + (lang === 'pt' ? g.formPt : g.form)).join(' + ');
+      const roundLabel = lang === 'pt' ? 'Rodada' : 'Round';
+      item.innerHTML = `
+        <div class="history-grammar" style="color:${(h.grammars||[h.grammar])[0].color}">${roundLabel} ${h.round} · ${grammarLabel}</div>
+        <div class="history-sentence">${h.sentence}</div>
+      `;
+      histEl.appendChild(item);
+    });
+    histWrap.style.display = 'block';
+  } else {
+    histWrap.style.display = 'none';
+  }
+  showScreen('home');
+}
+
+// ── Formspree opt-in submission ───────────────────────────────────────────────
+async function submitToFormspree(name, email) {
+  try {
+    await fetch('https://formspree.io/f/xdabewpy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        message: `StorySpark opt-in: ${name} (${email}) agreed to receive updates.`,
+        _subject: `New StorySpark subscriber: ${name}`,
+      })
+    });
+  } catch(e) {
+    console.warn('Formspree submission failed:', e);
+  }
+}
+
+// ── Export / Print ────────────────────────────────────────────────────────────
+document.getElementById('export-btn').addEventListener('click', exportResults);
+
+function exportResults() {
+  if (history.length === 0) return;
+
+  const name = history[0].name || (lang === 'pt' ? 'Anônimo' : 'Anonymous');
+  const now = new Date().toLocaleDateString(lang === 'pt' ? 'pt-BR' : 'en-GB', {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const sessionLabel   = lang === 'pt' ? 'Sessão' : 'Session';
+  const studentLabel   = lang === 'pt' ? 'Aluno' : 'Student';
+  const roundsLabel    = lang === 'pt' ? 'rodadas' : 'rounds';
+  const dateLabel      = lang === 'pt' ? 'Data' : 'Date';
+  const roundLabel     = lang === 'pt' ? 'Rodada' : 'Round';
+  const grammarLabel   = lang === 'pt' ? 'Estrutura' : 'Grammar';
+  const wordsLabel     = lang === 'pt' ? 'Palavras' : 'Words';
+  const sentenceLabel  = lang === 'pt' ? 'Frase' : 'Sentence';
+
+  const metaEl = document.getElementById('print-meta');
+  const email = history[0].email || '';
+  const optin = history[0].optin;
+  const optinLabel = lang === 'pt' ? 'Aceita contacto' : 'Opted in';
+  const optinNo = lang === 'pt' ? 'Não' : 'No';
+  const levelLabel = lang === 'pt' ? 'Nível' : 'Level';
+  const entryLevel = history[0].level || 'A1';
+  metaEl.innerHTML = `
+    <strong>${studentLabel}:</strong> ${name}${email ? ' &lt;' + email + '&gt;' : ''} &nbsp;|&nbsp;
+    <strong>${levelLabel}:</strong> ${entryLevel} &nbsp;|&nbsp;
+    <strong>${dateLabel}:</strong> ${now} &nbsp;|&nbsp;
+    <strong>${sessionLabel}:</strong> ${history.length} ${roundsLabel} &nbsp;|&nbsp;
+    <strong>${optinLabel}:</strong> ${optin ? '✅ Yes' : '❌ ' + optinNo}
+  `;
+
+  const itemsEl = document.getElementById('print-items');
+  itemsEl.innerHTML = '';
+  history.forEach(h => {
+    const hGs = h.grammars || [h.grammar];
+    const gLabel = hGs.map(g => (lang === 'pt' ? g.labelPt : g.label) + ' — ' + (lang === 'pt' ? g.formPt : g.form)).join(' + ');
+    const div = document.createElement('div');
+    div.className = 'print-item';
+    div.innerHTML = `
+      <div class="print-round">${roundLabel} ${h.round} · ${h.sentenceCount} ${h.sentenceCount === 1 ? (lang === "pt" ? "frase" : "sentence") : (lang === "pt" ? "frases" : "sentences")}</div>
+      <div class="print-grammar">${grammarLabel}: ${gLabel}</div>
+      <div class="print-words">${wordsLabel}: ${h.words.join(', ')}</div>
+      <div class="print-sentence">${h.sentence}</div>
+      ${(() => {
+        const fbEl = document.getElementById('ai-feedback-' + h.round);
+        if (!fbEl || fbEl.querySelector('.ai-loading')) return '';
+        const txt = fbEl.innerText || '';
+        return txt ? `<div style="margin-top:8px; font-size:0.8rem; color:#555; border-left:2px solid #6366f1; padding-left:10px;">${txt.replace(/
+/g,' · ')}</div>` : '';
+      })()}
+    `;
+    itemsEl.appendChild(div);
+  });
+
+  window.print();
+}
+</script>
+</body>
+</html>
